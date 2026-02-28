@@ -1,24 +1,49 @@
 
-import * as firebaseApp from 'firebase/app';
+import { initializeApp } from 'firebase/app';
 import { 
   getFirestore, collection, onSnapshot, 
   addDoc, doc, updateDoc, deleteDoc, 
   setDoc, query, orderBy, where, Timestamp 
 } from 'firebase/firestore';
-import * as firebaseAuth from 'firebase/auth';
-import * as firebaseAnalytics from "firebase/analytics";
+import { 
+  getAuth, GoogleAuthProvider, signInWithPopup, 
+  signOut, signInWithEmailAndPassword 
+} from 'firebase/auth';
+import { getAnalytics } from "firebase/analytics";
 import { firebaseConfig, isFirebaseConfigured } from '../firebaseConfig';
-import { Product, Order, PromoCode, OrderStatus, SupportSession, SupportMessage, AdminLoginHistory, UserProfile, Notification } from '../types';
+import { Product, Order, PromoCode, OrderStatus, SupportSession, SupportMessage, AdminLoginHistory, UserProfile, Notification, Review } from '../types';
 import { INITIAL_PRODUCTS, INITIAL_PROMOS } from '../constants';
 
 // ... existing code ...
 
+export const dbAddReview = async (review: Omit<Review, 'id'>) => {
+  if (db) {
+    try {
+      await addDoc(collection(db, 'reviews'), review);
+    } catch(e) { handleDbError(e, () => {}); }
+  }
+};
+
+export const subscribeToProductReviews = (productId: string, callback: (data: Review[]) => void) => {
+  if (db) {
+    const q = query(
+      collection(db, 'reviews'), 
+      where('productId', '==', productId), 
+      orderBy('timestamp', 'desc')
+    );
+    return onSnapshot(q, (snapshot) => {
+      callback(snapshot.docs.map(d => ({ ...d.data(), id: d.id } as Review)));
+    }, (error) => handleDbError(error, () => {}));
+  } else {
+    callback([]);
+  }
+};
+
 export const signInWithGoogle = async (): Promise<UserProfile | null> => {
   if (auth) {
     try {
-      const authModule = (firebaseAuth.GoogleAuthProvider) ? firebaseAuth : (firebaseAuth as any).default;
-      const provider = new authModule.GoogleAuthProvider();
-      const result = await authModule.signInWithPopup(auth, provider);
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
       const user = result.user;
       return {
         uid: user.uid,
@@ -36,8 +61,7 @@ export const signInWithGoogle = async (): Promise<UserProfile | null> => {
 
 export const signOutUser = async () => {
   if (auth) {
-    const authModule = (firebaseAuth.signOut) ? firebaseAuth : (firebaseAuth as any).default;
-    await authModule.signOut(auth);
+    await signOut(auth);
   }
 };
 
@@ -84,12 +108,10 @@ export const setGlobalErrorCallback = (cb: (msg: string) => void) => { globalErr
 const initFirebase = async () => {
   if (isFirebaseConfigured() && !db) {
     try {
-      const app = (firebaseApp.initializeApp) ? firebaseApp.initializeApp(firebaseConfig) : (firebaseApp as any).default.initializeApp(firebaseConfig);
+      const app = initializeApp(firebaseConfig);
       db = getFirestore(app);
-      const authModule = (firebaseAuth.getAuth) ? firebaseAuth : (firebaseAuth as any).default;
-      auth = authModule.getAuth(app);
-      const analyticsModule = (firebaseAnalytics.getAnalytics) ? firebaseAnalytics : (firebaseAnalytics as any).default;
-      analytics = analyticsModule.getAnalytics(app);
+      auth = getAuth(app);
+      analytics = getAnalytics(app);
       // Removed automatic anonymous sign-in to prevent overwriting existing sessions
       // await authModule.signInAnonymously(auth);
       console.log("Firebase initialized for:", firebaseConfig.projectId);
@@ -339,8 +361,7 @@ export const dbDeleteLoginHistory = async (id: string) => {
 
 export const dbLoginAdmin = async (email: string, password: string) => {
   if (auth) {
-    const authModule = (firebaseAuth.signInWithEmailAndPassword) ? firebaseAuth : (firebaseAuth as any).default;
-    const userCredential = await authModule.signInWithEmailAndPassword(auth, email, password);
+    const userCredential = await signInWithEmailAndPassword(auth, email, password);
     return userCredential.user;
   }
   // Fallback for local development/no firebase
@@ -352,8 +373,7 @@ export const dbLoginAdmin = async (email: string, password: string) => {
 
 export const dbLogout = async () => {
   if (auth) {
-    const authModule = (firebaseAuth.signOut) ? firebaseAuth : (firebaseAuth as any).default;
-    await authModule.signOut(auth);
+    await signOut(auth);
   }
 };
 
