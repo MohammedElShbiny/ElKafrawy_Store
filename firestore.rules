@@ -1,0 +1,54 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return request.auth != null && (
+        request.auth.token.email == 'admin@elkafrawy' || 
+        request.auth.token.email == 'admin@elkafrawy.com'
+      );
+    }
+
+    // Helper function to check if user is owner
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // Products: Public read, Admin write
+    match /products/{productId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Orders: Public create, Admin read/write
+    match /orders/{orderId} {
+      allow create: if true;
+      allow read, update, delete: if isAdmin();
+      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Promos: Public read, Admin write
+    match /promos/{promoId} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // Support: Open for the custom guest support system
+    match /support_sessions/{sessionId} {
+      allow read, write: if true;
+    }
+    match /support_messages/{messageId} {
+      allow read, write: if true;
+    }
+
+    // Notifications: Private to user
+    match /notifications/{notificationId} {
+      allow read, write: if request.auth != null && resource.data.userId == request.auth.uid;
+    }
+
+    // Admin History: Admin only
+    match /admin_login_history/{historyId} {
+      allow read, write: if isAdmin();
+    }
+  }
+}

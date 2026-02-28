@@ -1,0 +1,5 @@
+{
+  "name": "الكفراوي للتكنولوجيا الحديثه",
+  "description": "A high-end electronics store specializing in PCs and laptops with admin management and real-time order tracking.",
+  "requestFramePermissions": ["geolocation"]
+}
