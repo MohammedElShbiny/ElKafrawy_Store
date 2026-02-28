@@ -147,7 +147,7 @@ const App: React.FC = () => {
           quantity: item.quantity
         })),
         userInfo,
-        userId: currentUser?.uid, // Add userId
+        userId: currentUser?.uid || null, // Add userId
         status: OrderStatus.PENDING,
         timestamp: Date.now(),
         subtotal,
@@ -430,6 +430,7 @@ const App: React.FC = () => {
           quantity: 1
         }],
         userInfo,
+        userId: currentUser?.uid || null,
         status: OrderStatus.RESERVED,
         timestamp: Date.now(),
         subtotal: reservationProduct.price,
@@ -498,7 +499,7 @@ const App: React.FC = () => {
       <main className="flex-1 container mx-auto px-4 py-8 max-w-7xl">
         <Routes>
           <Route path="/" element={<UserShop products={products} addToCart={addToCart} handleReserve={handleReserve} lang={lang} t={t} />} />
-          <Route path="/product/:id" element={<ProductDetails products={products} addToCart={addToCart} handleReserve={handleReserve} lang={lang} t={t} />} />
+          <Route path="/product/:id" element={<ProductDetails products={products} addToCart={addToCart} handleReserve={handleReserve} lang={lang} t={t} currentUser={currentUser} orders={orders} />} />
           <Route 
             path="/admin@elkafrawy" 
             element={

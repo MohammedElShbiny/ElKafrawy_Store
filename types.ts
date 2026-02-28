@@ -118,6 +118,16 @@ export interface AdminLoginHistory {
   ip?: string;
 }
 
+export interface Review {
+  id: string;
+  productId: string;
+  userId: string;
+  userName: string;
+  rating: number; // 1-5
+  comment: string;
+  timestamp: number;
+}
+
 export interface AppState {
   products: Product[];
   orders: Order[];
